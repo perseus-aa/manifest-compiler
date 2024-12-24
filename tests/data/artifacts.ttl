@@ -1,0 +1,43 @@
+@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix entity: <http://perseus.tufts.edu/ns/entities/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+entity:aa_1 a <http://vocab.getty.edu/aat/building>,
+        crm:E22_Human-Made_Object .
+
+entity:aa_10 a <http://vocab.getty.edu/aat/building>,
+        crm:E22_Human-Made_Object .
+
+entity:aa_100 a <http://vocab.getty.edu/aat/building>,
+        crm:E22_Human-Made_Object .
+
+entity:aa_1000 a <http://vocab.getty.edu/aat/coin>,
+        crm:E22_Human-Made_Object ;
+    rdfs:label "Boston 12.440" ;
+    crm:P1i_is_identified_by "Boston 12.440" ;
+    crm:P3_has_note "actual_weight: 3.76 g.",
+        "commentary: Republican denarius",
+        "context: Rome",
+        "date_for_sort: -125",
+        "denomination: Denarius",
+        "dimensions: 18.3 mm.",
+        "donor: Gift of Joseph H. Clark",
+        "entered_by: Alan E. Kaiser",
+        "id: aa_1000",
+        "issuing_authority: Caius Caecilius Metellus Caprarius",
+        "location: Perseus",
+        "material: Silver",
+        "name: Boston 12.440",
+        "obverse_legend: ROMA (in left field)",
+        "obverse_type: Head of Roma, facing right, wearing a winged helmet.  The crest is in the form of a Phrygian cap with griffin's head or star; star under chin",
+        "period: Republican",
+        "period_for_sort: 56. Etruscan/Republican",
+        "perseus_version: 4",
+        "region: Latium",
+        "reverse_legend: METELLVS (in exergue)",
+        "reverse_type: Jupiter in a biga of elephants, advancing to the left; above, Victory, flying to the right, to crown Jupiter with a wreath. ",
+        "sources_used: <hi rend=\"ital\"><bibl>BMCRR</bibl></hi> I, 182, 1180 ff.; pl. XXX.8; <bibl>Babelon 1885-1886, 1.263, 14</bibl>; <hi rend=\"ital\"><bibl>RRC</bibl></hi> no. 269/1, pl. XXXVIII",
+        "type: Coin",
+        "unitary_date: -125",
+        "unitary_mod: exact" ;
+    crm:P50_has_current_keeper <https://www.wikidata.org/wiki/Q49133> .

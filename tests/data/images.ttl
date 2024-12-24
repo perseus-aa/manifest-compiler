@@ -1,0 +1,16 @@
+@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix entity: <http://perseus.tufts.edu/ns/entities/> .
+@prefix image: <https://iiif-dev.perseus.tufts.edu/iiif/3/> .
+
+image:1997.03.0101 a crm:E36_Visual_Item ;
+    crm:P138_represents entity:aa_1000 ;
+    crm:P3_has_note "Obverse: Helmeted head of Roma",
+        "Photograph by Maria Daniels, courtesy of the Museum of Fine Arts, Boston" .
+
+image:1997.03.0102 a crm:E36_Visual_Item ;
+    crm:P138_represents entity:aa_1000 ;
+    crm:P3_has_note "Photograph by Maria Daniels, courtesy of the Museum of Fine Arts, Boston",
+        "Reverse: Jupiter riding a biga of elephants to the left; above, Victory flying to the right, to crown Jupiter with a wreath" .
+
+entity:aa_1000 crm:P138i_is_represented_by image:1997.03.0101,
+        image:1997.03.0102 .

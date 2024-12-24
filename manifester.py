@@ -19,11 +19,26 @@ image = Namespace("https://iiif-dev.perseus.tufts.edu/iiif/3/")
 config.configs['helpers.auto_fields.AutoLang'].auto_lang = "en"
 base_url = "https://www.perseus.tufts.edu/api"
 
+class Image:
+    def __init__(self, uri:URIRef, graph:Graph):
+        self.uri = uri
+        self.graph = graph
+
+    @property
+    def notes(self):
+        result = self.graph.objects(subject=self.uri,
+                           predicate=crm['P3_has_note'])
+        return [str(note) for note in result]
+
+        
+
+
 class Entity:
     def __init__(self, uri:URIRef, graph:Graph):
         self.uri = uri
         self.graph = graph
         self._manifest = None
+        self._images = None
 
     @property
     def id(self):
@@ -34,13 +49,16 @@ class Entity:
         qresults = self.graph.objects(subject=self.uri,
                                         predicate=RDFS['label'])
         try:
-            return list(qresults)[0]
+            return str(list(qresults)[0])
         except:
             return "no label"
     
     @property
     def images(self):
-        return list(self.graph.objects(self.uri, crm["P138i_is_represented_by"]))
+        if self._images is None:
+            lst = list(self.graph.objects(self.uri, crm["P138i_is_represented_by"]))
+            self._images = [Image(i, self.graph) for i in lst]
+        return self._images
     
     @property
     def manifest(self):
@@ -48,7 +66,9 @@ class Entity:
             self._manifest = Manifest(id=f"{base_url}/{self.id}",
                                       label={'en': [f"{self.label}"]})
             for image in self.images:
-                canvas = self._manifest.create_canvas_from_iiif(image)
+                canvas:Canvas = self._manifest.create_canvas_from_iiif(image.uri)
+                for note in image.notes:
+                    canvas.add_label(language="en", value=note)                      
                 self._manifest.add_item(canvas)
 
 
