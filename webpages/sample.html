@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>A Manifest</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"></link>
+        <meta charset="UTF-8"></meta>
+        <script src="https://unpkg.com/mirador@3.2.0/dist/mirador.min.js"></script>
+     </head>
+    <body>
+          <div id="the-viewer"/>
+    
+
+      <script type="text/javascript">
+        const mirador = Mirador.viewer({
+               "id": "the-viewer",
+            "windows": [{"manifestId": "https://gist.githubusercontent.com/cwulfman/f6b3e4d27d951e93471de48c2e63957c/raw/4f7ded2515a778f3d4fdb431816c97fa791add1c/mani1.json"
+}]
+                });
+      </script>
+    
+        </body>
+</html>
