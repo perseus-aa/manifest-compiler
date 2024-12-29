@@ -1,6 +1,6 @@
 from pathlib import Path
 from rdflib import Graph, Namespace, RDF, RDFS, URIRef
-from iiif_prezi3 import Manifest, Canvas, config
+from iiif_prezi3 import Manifest, Canvas, config, KeyValueString
 
 
 crm = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
@@ -15,7 +15,7 @@ building = Namespace("http://perseus.tufts.edu/ns/building/")
 site = Namespace("http://perseus.tufts.edu/ns/artifact/site/")
 image = Namespace("https://iiif-dev.perseus.tufts.edu/iiif/3/")
 
-
+# Configuration for iiif_prezi3
 config.configs['helpers.auto_fields.AutoLang'].auto_lang = "en"
 base_url = "https://www.perseus.tufts.edu/api"
 
@@ -44,14 +44,30 @@ class Entity:
     def id(self):
         return self.uri.split('/')[-1]
 
+
     @property
     def label(self)->str:
         qresults = self.graph.objects(subject=self.uri,
                                         predicate=RDFS['label'])
         try:
             return str(list(qresults)[0])
-        except:
+        except IndexError:
             return "no label"
+
+
+
+    @property
+    def props(self):
+        result = self.graph.objects(subject=self.uri,
+                           predicate=crm['P3_has_note'])
+
+        props = {}
+        for note in result:
+            p,v = str(note).split(':')
+            props[p] = v.strip()
+        return props
+
+
     
     @property
     def images(self):
@@ -63,8 +79,12 @@ class Entity:
     @property
     def manifest(self):
         if self._manifest is None:
+            metadata = [KeyValueString(label=k,value=v) for k,v in self.props.items()]
             self._manifest = Manifest(id=f"{base_url}/{self.id}",
-                                      label={'en': [f"{self.label}"]})
+                                      label={'en': [f"{self.label}"]},
+                                      metadata=metadata
+                                      )
+
             for image in self.images:
                 canvas:Canvas = self._manifest.create_canvas_from_iiif(image.uri)
                 for note in image.notes:
@@ -105,13 +125,3 @@ class Db:
                 object=crm['E22_Human-Made_Object'])
             self._entities = [Entity(e, self.graph) for e in gen]
         return self._entities
-    
-
-    def images_for(self, entity:URIRef):
-        return list(self.graph.objects(entity, crm["P138i_is_represented_by"]))
-    
-    
-    def manifest_for(self, entity:URIRef):
-        base_id = entity.split('/')[-1]
-        m = Manifest(id=f"{base_url}/{base_id}",
-                     label="foo")
