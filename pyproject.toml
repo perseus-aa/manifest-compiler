@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "iiif-prezi3>=2.0.0",
     "ipykernel>=6.29.5",
+    "jinja2>=3.1.5",
     "rdflib>=7.1.1",
 ]
 
