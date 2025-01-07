@@ -1,7 +1,7 @@
 from pathlib import Path
 import urllib3
 from rdflib import Graph, Namespace, RDF, RDFS, URIRef
-from iiif_prezi3 import Manifest, Canvas, config, KeyValueString
+from iiif_prezi3 import Manifest, ManifestRef, Canvas, config, KeyValueString, Collection
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 
@@ -16,6 +16,16 @@ coin = Namespace("http://perseus.tufts.edu/ns/artifact/coin/")
 building = Namespace("http://perseus.tufts.edu/ns/building/")
 site = Namespace("http://perseus.tufts.edu/ns/artifact/site/")
 image = Namespace("https://iiif-dev.perseus.tufts.edu/iiif/3/")
+
+# Constants
+BUILDING = aat['building']
+COIN = aat['coin']
+SCULPTURE = aat['sculpture']
+SITE = aat['site']
+GEM = aat['300011172']
+VASE = aat['300132254']
+
+ARTIFACT_TYPES = [BUILDING, COIN, SCULPTURE, SITE, GEM, VASE]
 
 # Configuration for iiif_prezi3
 config.configs['helpers.auto_fields.AutoLang'].auto_lang = "en"
@@ -81,11 +91,18 @@ class Entity:
         self._web_page = None
 
 
+
     @property
     def id(self):
         return self.uri.split('/')[-1]
 
-
+    @property
+    def type(self):
+        qresults = self.graph.objects(subject=self.uri,
+                                      predicate=RDF['type'])
+        artifact_type =  [type for type in qresults if type != crm['E22_Human_Made_Object']][0]
+        return artifact_type
+    
 
 
     @property
@@ -104,22 +121,16 @@ class Entity:
                            predicate=crm['P3_has_note'])
 
         props = {}
+        if self.thumbnail:
+            props['thumbnail'] = self.thumbnail
+
         for note in result:
             try:
                 p,v = str(note).split(':')
                 props[p] = v.strip()
             except ValueError:
-                print(f"badly formed note: {note}")
+                pass
         return props
-
-
-    @property
-    def type(self):
-        qresults = self.graph.objects(subject=self.uri,
-                                      predicate=RDF['type'])
-        artifact_type =  [type for type in qresults if type != crm['E22_Human_Made_Object']][0]
-        return artifact_type
-
 
 
     @property
@@ -128,6 +139,14 @@ class Entity:
             lst = list(self.graph.objects(self.uri, crm["P138i_is_represented_by"]))
             self._images = [Image(i, self.graph) for i in lst]
         return self._images
+    
+
+    @property
+    def thumbnail(self):
+        if self.images:
+            return f"{str(self.images[0].uri)}/full/100,/0/default.png"
+        else:
+            return None
 
 
     @property
@@ -138,6 +157,9 @@ class Entity:
                                       label={'en': [f"{self.label}"]},
                                       metadata=metadata
                                       )
+            if self.images:
+                self._manifest.add_thumbnail(str(self.images[0].uri))
+        
 
             for image in self.images:
                 # print(f"canvasifying image {image.uri}")
@@ -191,6 +213,36 @@ class Db:
                 object=crm['E22_Human-Made_Object'])
             self._entities = [Entity(e, self.graph) for e in gen]
         return self._entities
+    
+
+    def entities_by_type(self, entity_type):
+        return filter(lambda x: x.type == entity_type, self.entities)
+
+
+    @property
+    def vases(self):
+        return filter(lambda x: x.type == VASE, self.entities)
+    
+    @property
+    def buildings(self):
+        return filter(lambda x: x.type == BUILDING, self.entities)
+
+    @property
+    def coins(self):
+        return filter(lambda x: x.type == COIN, self.entities)
+    
+    @property
+    def sculptures(self):
+        return filter(lambda x: x.type == SCULPTURE, self.entities)
+
+    @property
+    def sites(self):
+        return filter(lambda x: x.type == SITE, self.entities)
+    
+    @property
+    def gems(self):
+        return filter(lambda x: x.type == GEM, self.entities)
+    
 
 
     def compile_manifests(self, outdir):
@@ -219,3 +271,21 @@ class Db:
             outfile:Path = subdir / Path(f"{e.id}.html")
             with open(outfile, 'w', encoding="utf-8") as f:
                 print(e.web_page, file=f)
+
+
+    
+    def compile_props(self, outdir):
+        props = {}
+        for e in self.entities:
+            if e.props:
+                props[e.id] = e.props
+        return props
+    
+
+    def vase_props(self):
+        props = []
+        for x in self.vases:
+            props.append(x.props)
+        return props
+        
+
