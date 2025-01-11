@@ -1,7 +1,7 @@
 [project]
-name = "manifester"
+name = "manifest-compiler"
 version = "0.1.0"
-description = "Add your description here"
+description = "code to compile Perseus CRM into IIIF manifests"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -17,3 +17,19 @@ dev = [
     "pytest-datadir>=1.5.0",
     "ruff>=0.8.4",
 ]
+
+[tool.pyright]
+include = ["src"]
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "basic"
+reportMissingImports = "error"
+reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
+[pytest]
+pythonpath = 'src'

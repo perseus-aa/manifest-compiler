@@ -1,4 +1,4 @@
-from manifester import Db, Entity
+from compiler.models import Db, Entity
 
 
 def test_db(shared_datadir):

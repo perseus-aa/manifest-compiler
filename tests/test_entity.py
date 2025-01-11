@@ -1,4 +1,5 @@
-from manifester import Db, Entity, Image, entity
+from compiler.models import Db, Entity, Image
+from compiler import entity
 from rdflib import Graph, RDFS
 
 def test_properties(shared_datadir):
