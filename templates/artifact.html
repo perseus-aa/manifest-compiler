@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>{{label}}</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"></link>
+        <meta charset="UTF-8"></meta>
+        <script src="https://unpkg.com/mirador@3.2.0/dist/mirador.min.js"></script>
+     </head>
+    <body>
+          <div id="the-viewer"/>
+    
+
+      <script type="text/javascript">
+        const mirador = Mirador.viewer({
+               "id": "the-viewer",
+            "windows": [{"manifestId": "https://iiif-metadata.perseus.tufts.edu/{{series}}/{{id}}.json" }]
+                });
+      </script>
+    
+        </body>
+</html>

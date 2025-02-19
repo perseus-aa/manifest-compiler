@@ -1,0 +1,71 @@
+@prefix aa: <http://perseus.tufts.edu/ns/aa/> .
+@prefix aat: <http://vocab.getty.edu/aat/> .
+@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix image: <https://iiif.perseus.tufts.edu/iiif/3/> .
+@prefix schema: <https://schema.org/> .
+
+aa:aa_3988 crm:P138i_is_represented_by image:1990.24.0077,
+        image:1997.03.1681,
+        image:1997.03.1682 .
+
+aa:aa_4008 crm:P138i_is_represented_by image:1990.24.0569,
+        image:1990.24.0570,
+        image:1990.24.0571 .
+
+
+
+aa:aa_3988 a aat:300132254,
+        crm:E22_Human-Made_Object ;
+    rdfs:label "Boston 72.43" ;
+    aa:date_for_sort "0" ;
+    aa:location "Perseus" ;
+    aa:perseus_version "-1" ;
+    aa:shape "Knob-lug bowl" ;
+    aa:type "ArtifactType.VASE" ;
+    aa:ware "Cypriote" ;
+    crm:P10_has_current_keeper <https://www.wikidata.org/wiki/Q49133> ;
+    crm:P1i_is_identified_by "Boston 72.43" ;
+    crm:P48_has_preferred_identifier "Boston 72.43" .
+
+aa:aa_4008 a aat:300132254,
+        crm:E22_Human-Made_Object ;
+    rdfs:label "Boston 59.710" ;
+    aa:date_for_sort "0" ;
+    aa:location "Perseus" ;
+    aa:perseus_version "-1" ;
+    aa:shape "Krater" ;
+    aa:type "ArtifactType.VASE" ;
+    aa:ware "Mycenaean" ;
+    crm:P10_has_current_keeper <https://www.wikidata.org/wiki/Q49133> ;
+    crm:P1i_is_identified_by "Boston 59.710" ;
+    crm:P48_has_preferred_identifier "Boston 59.710" .
+
+
+image:1997.03.1681 a crm:E38_Image ;
+    rdfs:label "1997.03.1681" ;
+    crm:P1i_is_identified_by "1997.03.1681" ;
+    crm:P48_has_preferred_identifier "Perseus:image:1997.03.1681" ;
+    schema:caption "Bowl" ;
+    schema:creditText "Photograph by Maria Daniels, courtesy of the Museum of Fine Arts, Boston" .
+
+image:1997.03.1682 a crm:E38_Image ;
+    rdfs:label "1997.03.1682" ;
+    crm:P1i_is_identified_by "1997.03.1682" ;
+    crm:P48_has_preferred_identifier "Perseus:image:1997.03.1682" ;
+    schema:caption "Bowl, detail of handle" ;
+    schema:creditText "Photograph by Maria Daniels, courtesy of the Museum of Fine Arts, Boston" .
+
+image:1990.24.0570 a crm:E38_Image ;
+    rdfs:label "1990.24.0570" ;
+    crm:P1i_is_identified_by "1990.24.0570" ;
+    crm:P48_has_preferred_identifier "Perseus:image:1990.24.0570" ;
+    schema:caption "Mycenaean krater; shape rotation: side two" ;
+    schema:creditText "Photograph courtesy of the Museum of Fine Arts, Boston" .
+
+image:1990.24.0571 a crm:E38_Image ;
+    rdfs:label "1990.24.0571" ;
+    crm:P1i_is_identified_by "1990.24.0571" ;
+    crm:P48_has_preferred_identifier "Perseus:image:1990.24.0571" ;
+    schema:caption "Mycenaean krater; handle" ;
+    schema:creditText "Photograph courtesy of the Museum of Fine Arts, Boston" .
