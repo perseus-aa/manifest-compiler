@@ -1,10 +1,21 @@
 from pathlib import Path
+import logging
+import sys
 from compiler import Db, Compiler
 
 rdf_dir = Path("/Users/wulfmanc/repos/gh/perseus-aa/rdf")
 out_dir = Path("/tmp/output")
 manifest_out = out_dir / Path("manifests")
 webpage_out = out_dir / Path("webpages")
+
+
+# Configure logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    stream=sys.stdout
+)
 
 
 def main():

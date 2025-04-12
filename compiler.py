@@ -1,9 +1,12 @@
 from pathlib import Path
+import logging
 from enum import Enum
 from rdflib import Namespace, Graph, RDF, RDFS, URIRef
 from iiif_prezi3 import Manifest, ManifestRef, Canvas, config, KeyValueString, Collection
 from jinja2 import Environment, PackageLoader, select_autoescape
 import httpx
+
+logger = logging.getLogger(__name__)
 
 # Namespaces
 AAT = Namespace("http://vocab.getty.edu/aat/")
@@ -48,9 +51,16 @@ ARTIFACT_TYPES = [BUILDING, COIN, GEM, SCULPTURE, SITE, VASE]
 # Configuration for iiif_prezi3
 config.configs['helpers.auto_fields.AutoLang'].auto_lang = "en"
 
-base_url = "https://www.perseus.tufts.edu/api"
+# base_url = "https://www.perseus.tufts.edu/api"
+
+# Set the base URI for the manifests.  It is the URL
+# for Tufts's production metadata server.
+base_url = "https://iiif-metadata.perseus.tufts.edu"
+
 
 def base_graph() -> Graph:
+    """Generates an empty Graph object with namespaces bound."""
+
     graph:Graph = Graph()
     [graph.bind(k,v) for k,v in AA_NAMESPACES.items()]
     return graph
@@ -190,9 +200,9 @@ class Entity:
                 thumb = self.images[0]
                 resp = httpx.get(f"{thumb.uri}/info.json")
                 if resp.status_code in [404, 500]:
-                    print(f"Thumbnail image not found: {thumb.uri}")
+                    logger.warning(f"Thumbnail image not found: {thumb.uri}")
                 else:
-                    print("adding thumbnail")
+                    logger.info("adding thumbnail")
                     self._manifest.add_thumbnail(str(self.images[0].uri))
         
 
@@ -200,7 +210,7 @@ class Entity:
                 # print(f"canvasifying image {image.uri}")
                 resp = httpx.get(f"{image.uri}/info.json")
                 if resp.status_code in [404, 500]:
-                    print(f"Image not found: {image.uri}")
+                    logger.warning(f"Image not found: {image.uri}")
                 else:
                     canvas:Canvas = self._manifest.create_canvas_from_iiif(image.uri)
                     # print(f"added canvas for {image.uri}")
@@ -312,7 +322,7 @@ class Compiler:
             entity = [e for e in self.db.entities if e.id == entity_id][0]
             return entity.manifest
         except IndexError:
-            print(f"{entity_id} not found")
+            logger.error(f"{entity_id} not found")
         
 
     def compile_manifests(self, outdir):
@@ -321,20 +331,20 @@ class Compiler:
             subdir.mkdir(parents=True, exist_ok=True)
             outfile:Path = subdir / Path(f"{e.id}.json")
             if outfile.exists():
-                print(f"skipping {outfile}")
+                logger.info(f"skipping {outfile}")
             else:
-                print(f"compiling manifest for entity {e.id}")
+                logger.info(f"compiling manifest for entity {e.id}")
                 manifest = e.manifest
-                print(f"writing manifest to {outfile}")
+                logger.info(f"writing manifest to {outfile}")
                 with open(outfile,"w", encoding="utf-8") as f:
                     print(manifest.json(indent=2), file=f)
 
 
     def compile_web_pages(self, outdir):
         for e in self.db.entities:
-            print(f"compiling web page for {e.id}")
+            logger.info(f"compiling web page for {e.id}")
             # subdir:Path = Path(outdir) / Path(series(e.id))
-            print(e.props)
+            # print(e.props)
 
             subdir:Path = Path(outdir) / artifact_type_directory(e.type)
             subdir.mkdir(parents=True, exist_ok=True)
