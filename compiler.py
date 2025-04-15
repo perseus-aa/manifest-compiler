@@ -103,12 +103,40 @@ class Image:
         self.uri = uri
         self.graph = graph
 
-    @property
-    def notes(self):
-        result = self.graph.objects(subject=self.uri,
-                           predicate=CRM['P3_has_note'])
-        return [str(note) for note in result]
 
+    def exists(self) -> bool:
+        try:
+            resp = httpx.get(f"{self.uri}/info.json")
+        except httpx.RemoteProtocolError:
+            logging.error(f"RemoteProtocolError when trying to get {self.uri}/info.json")
+            return False
+
+        return resp.status_code not in [404, 500]    
+
+    @property
+    def thumbnail(self):
+        if self.exists():
+            return f"{str(self.uri)}/full/100,/0/default.png"
+        else:
+            return None
+
+    @property
+    def caption(self):
+        result = self.graph.objects(subject=self.uri,
+                                    predicate=SCHEMA['caption'])
+        if result:
+            return next(result)
+        else:
+            return None
+
+    @property
+    def creditText(self):
+        result = self.graph.objects(subject=self.uri,
+                                    predicate=SCHEMA['creditText'])
+        if result:
+            return next(result)
+        else:
+            return None
 
 
 class Entity:
@@ -125,6 +153,7 @@ class Entity:
         self._manifest = None
         self._images = None
         self._web_page = None
+        self._thumbnail = None
 
 
 
@@ -180,43 +209,40 @@ class Entity:
     @property
     def thumbnail(self):
         if self.images:
-            thumb = self.images[0]
-            resp = httpx.get(f"{thumb.uri}/info.json")
-            if resp.status_code not in [404, 500]:
-                return f"{str(self.images[0].uri)}/full/100,/0/default.png"
+            return self.images[0].thumbnail
         else:
             return None
-
 
     @property
     def manifest(self):
         if self._manifest is None:
             metadata = [KeyValueString(label=k,value=v) for k,v in self.props.items()]
-            self._manifest = Manifest(id=f"{base_url}/{self.id}",
+            self._manifest = Manifest(id=f"{base_url}/{self.id}/manifest.json",
                                       label={'en': [f"{self.label}"]},
                                       metadata=metadata
                                       )
-            if self.images:
-                thumb = self.images[0]
-                resp = httpx.get(f"{thumb.uri}/info.json")
-                if resp.status_code in [404, 500]:
-                    logger.warning(f"Thumbnail image not found: {thumb.uri}")
-                else:
-                    logger.info("adding thumbnail")
-                    self._manifest.add_thumbnail(str(self.images[0].uri))
         
+            if self.thumbnail:
+                self._manifest.add_thumbnail(self.thumbnail)
+                
 
-            for image in self.images:
-                # print(f"canvasifying image {image.uri}")
-                resp = httpx.get(f"{image.uri}/info.json")
-                if resp.status_code in [404, 500]:
+            for idx, image in enumerate(self.images):
+                # make sure the image actually exists before
+                # trying to make a canvas.
+                if not image.exists():
                     logger.warning(f"Image not found: {image.uri}")
                 else:
-                    canvas:Canvas = self._manifest.create_canvas_from_iiif(image.uri)
-                    # print(f"added canvas for {image.uri}")
-                    for note in image.notes:
-                        canvas.add_label(language="en", value=note)                      
+                    canvas:Canvas = self._manifest.create_canvas_from_iiif(image.uri,
+                                                                           id=f"{base_url}/{self.id}/p{idx+1}")
+
+                    if image.caption:
+                        canvas.add_label(image.caption, language="en")
+
+                    if image.creditText:
+                        canvas.add_label(image.creditText, language="en")
+
                     self._manifest.add_item(canvas)
+
         return self._manifest
     
     @property
