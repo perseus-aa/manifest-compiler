@@ -5,6 +5,7 @@ from rdflib import Namespace, Graph, RDF, RDFS, URIRef
 from iiif_prezi3 import Manifest, ManifestRef, Canvas, config, KeyValueString, Collection
 from jinja2 import Environment, PackageLoader, select_autoescape
 import httpx
+import csv
 
 logger = logging.getLogger(__name__)
 
@@ -111,12 +112,22 @@ class Image:
             logging.error(f"RemoteProtocolError when trying to get {self.uri}/info.json")
             return False
 
-        return resp.status_code not in [404, 500]    
+        return resp.status_code not in [404, 500]
+
+    @property
+    def id(self)->str:
+        return self.uri.split('/')[-1]
 
     @property
     def thumbnail(self):
         if self.exists():
-            return f"{str(self.uri)}/full/100,/0/default.png"
+            return f"{str(self.uri)}/full/pct:20/0/default.png"
+        else:
+            return None
+    @property
+    def small(self):
+        if self.exists():
+            return f"{str(self.uri)}/full/pct:50/0/default.png"
         else:
             return None
 
@@ -169,6 +180,10 @@ class Entity:
         return artifact_type
     
 
+    @property
+    def title(self)->str:
+        return self.label
+
 
     @property
     def label(self)->str:
@@ -216,33 +231,36 @@ class Entity:
     @property
     def manifest(self):
         if self._manifest is None:
-            metadata = [KeyValueString(label=k,value=v) for k,v in self.props.items()]
-            self._manifest = Manifest(id=f"{base_url}/{self.id}/manifest.json",
-                                      label={'en': [f"{self.label}"]},
-                                      metadata=metadata
-                                      )
-        
-            if self.thumbnail:
-                self._manifest.add_thumbnail(self.thumbnail)
+            if not self.images:
+                logger.warning(f"No images for {self.uri}; no manifest generated")
+            else:
+                metadata = [KeyValueString(label=k,value=v) for k,v in self.props.items()]
+                self._manifest = Manifest(id=f"{base_url}/{self.id}/manifest.json",
+                                          label={'en': [f"{self.label}"]},
+                                          metadata=metadata
+                                          )
                 
-
-            for idx, image in enumerate(self.images):
-                # make sure the image actually exists before
-                # trying to make a canvas.
-                if not image.exists():
-                    logger.warning(f"Image not found: {image.uri}")
-                else:
-                    canvas:Canvas = self._manifest.create_canvas_from_iiif(image.uri,
-                                                                           id=f"{base_url}/{self.id}/p{idx+1}")
-
-                    if image.caption:
-                        canvas.add_label(image.caption, language="en")
-
-                    if image.creditText:
-                        canvas.add_label(image.creditText, language="en")
-
-                    self._manifest.add_item(canvas)
-
+                if self.thumbnail:
+                    self._manifest.add_thumbnail(self.thumbnail)
+                    
+                    
+                for idx, image in enumerate(self.images):
+                    # make sure the image actually exists before
+                    # trying to make a canvas.
+                    if not image.exists():
+                        logger.warning(f"Image not found: {image.uri}")
+                    else:
+                        canvas:Canvas = self._manifest.create_canvas_from_iiif(image.uri,
+                                                                               id=f"{base_url}/{self.id}/p{idx+1}")
+                        
+                        if image.caption:
+                            canvas.add_label(image.caption, language="en")
+                            
+                        if image.creditText:
+                            canvas.add_label(image.creditText, language="en")
+                        
+                        self._manifest.add_item(canvas)
+                                    
         return self._manifest
     
     @property
@@ -336,37 +354,45 @@ class Db:
         return props
         
 
-
 class Compiler:
-    def __init__(self, db:Db):
+    def __init__(self, db:Db) -> None:
         self.db = db
-        self._manifests = []
+
+    def compile(self, directory:str) -> None:
+        raise NotImplementedError("Subclasses must implement this")
 
 
-    def compile_manifest(self, entity_id:str):
-        try:
-            entity = [e for e in self.db.entities if e.id == entity_id][0]
-            return entity.manifest
-        except IndexError:
-            logger.error(f"{entity_id} not found")
-        
 
-    def compile_manifests(self, outdir):
+class ManifestCompiler(Compiler):
+    def __init__(self, db:Db) -> None:
+        super().__init__(db)
+
+    def compile(self, directory:str) -> None:
+        dir_path:Path = Path(directory)
+        dir_path.mkdir(parents=True, exist_ok=True)
         for e in self.db.entities:
-            subdir:Path = Path(outdir) / Path(series(e.id))
-            subdir.mkdir(parents=True, exist_ok=True)
-            outfile:Path = subdir / Path(f"{e.id}.json")
-            if outfile.exists():
-                logger.info(f"skipping {outfile}")
-            else:
-                logger.info(f"compiling manifest for entity {e.id}")
-                manifest = e.manifest
+            outfile:Path = dir_path / Path(f"{e.uri}.json")
+            if outfile.exits:
+                logger.info(f"manifest already exists; skipping {outfile}")
+                continue
+
+            logger.info(f"compiling manifest for entity {e.id}")
+            manifest = e.manifest
+            if manifest:
                 logger.info(f"writing manifest to {outfile}")
                 with open(outfile,"w", encoding="utf-8") as f:
                     print(manifest.json(indent=2), file=f)
+            else:
+                logger.info("no manifest generated")
+
+                
+            
+class WebPageCompiler(Compiler):
+    def __init__(self, db:Db) -> None:
+        super().__init__(db)
 
 
-    def compile_web_pages(self, outdir):
+    def compile(self, outdir):
         for e in self.db.entities:
             logger.info(f"compiling web page for {e.id}")
             # subdir:Path = Path(outdir) / Path(series(e.id))
@@ -378,3 +404,71 @@ class Compiler:
             outfile:Path = subdir / Path(f"{e.id}.html")
             with open(outfile, 'w', encoding="utf-8") as f:
                 print(e.web_page, file=f)
+
+
+class ImageTableCompiler(Compiler):
+    def __init__(self, db:Db) -> None:
+        super().__init__(db)
+
+
+    # just compiles vase table for development
+    def compile(self, outfile:Path) -> None:
+        fieldnames = ['objectid', 'parentid', 'title', 'image_alt_text', 'object_location', 'image_small', 'image_thumb', 'display_template', 'format', 'description', 'source', 'type']
+        with open(outfile, 'w', encoding='utf-8') as f:
+            writer:DictWriter = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            
+            for entity in self.db.vases:
+                for image in entity.images:
+                    if image.exists():
+                        row = {}
+                        row['objectid'] = image.id
+                        row['parentid'] = entity.id
+                        row['title'] = image.id
+                        row['image_alt_text'] = image.caption
+                        row['object_location'] = image.uri
+                        row['image_small'] = image.small
+                        row['image_thumb'] = image.thumbnail
+                        row['display_template'] = 'image'
+                        row['format'] = 'image/jpeg'
+                        
+                        row['description'] = image.caption
+                        row['source'] = image.creditText
+                        row['type'] = 'Image;StillImage'
+                        
+                        writer.writerow(row)
+
+
+
+class EntityTableCompiler(Compiler):
+    def __init__(self, db:Db) -> None:
+        super().__init__(db)
+
+
+    # just compiles vase table for development
+    
+    def compile(self, outfile) -> None:
+        fieldnames = ['objectid', 'title', 'object_location', 'image_small',
+                      'image_thumb', 'display_template', 'format', 'description',
+                      'source', 'type']
+
+        with open(outfile, 'w', encoding='utf-8') as f:
+            writer:DictWriter = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+
+            for entity in self.db.vases:
+                row = {}
+                row['objectid'] = entity.id
+                row['title'] = entity.label
+                row['object_location'] = entity.uri
+                row['format'] = 'compound_object'
+                row['type'] = 'record'
+                row['display_template'] = 'compound_object'
+
+                if entity.images:
+                    image = entity.images[0]
+                    if image.exists:
+                        row['image_small'] = entity.images[0].small
+                        row['image_thumb'] = entity.images[0].thumbnail
+
+                writer.writerow(row)
